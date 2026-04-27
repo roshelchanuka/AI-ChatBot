@@ -1,0 +1,207 @@
+/* Premium TravelBot Styling */
+
+.stApp {
+    background-color: #0e1117;
+}
+
+/* Glassmorphism sidebar */
+[data-testid="stSidebar"] {
+    background-image: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Custom Chat Bubbles */
+.user-bubble {
+    background-color: #2563eb;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 20px 20px 0px 20px;
+    margin: 10px 0;
+    max-width: 80%;
+    float: right;
+    clear: both;
+    word-wrap: break-word;
+    height: auto;
+}
+
+.bot-bubble {
+    background-color: #334155;
+    color: #f1f5f9;
+    padding: 12px 18px;
+    border-radius: 20px 20px 20px 0px;
+    margin: 10px 0;
+    max-width: 85%;
+    float: left;
+    clear: both;
+    border-left: 4px solid #3b82f6;
+    word-wrap: break-word;
+    height: auto;
+    white-space: pre-wrap;
+}
+
+/* Emotion Avatar Container */
+.emotion-container {
+    text-align: center;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.emotion-emoji {
+    font-size: 60px;
+    margin-bottom: 10px;
+}
+
+.emotion-label {
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Cards for packages */
+.travel-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+/* --- EXACT CUSTOM FORM CSS --- */
+.auth-form-container, .form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #ffffff;
+  padding: 30px;
+  width: 450px;
+  border-radius: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  margin: auto;
+  color: #151717;
+}
+
+::placeholder {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.auth-form-container button, .form button {
+  align-self: flex-end;
+}
+
+.flex-column > label {
+  color: #151717;
+  font-weight: 600;
+}
+
+.inputForm {
+  border: 1.5px solid #ecedec;
+  border-radius: 10px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  transition: 0.2s ease-in-out;
+  background: white;
+}
+
+.input {
+  margin-left: 10px;
+  border: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: black;
+  border-radius: 10px;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.inputForm:focus-within {
+  border: 1.5px solid #2d79f3;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.flex-row > div > label {
+  font-size: 14px;
+  color: black;
+  font-weight: 400;
+}
+
+.span {
+  font-size: 14px;
+  margin-left: 5px;
+  color: #2d79f3;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.button-submit {
+  margin: 20px 0 10px 0;
+  background-color: #151717;
+  border: none;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 10px;
+  height: 50px;
+  width: 100%;
+  cursor: pointer;
+  align-self: center !important; /* Overriding align-self: flex-end for the main submit button */
+}
+
+.p {
+  text-align: center;
+  color: black;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.btn {
+  margin-top: 10px;
+  width: 100%;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 500;
+  gap: 10px;
+  border: 1px solid #ededef;
+  background-color: white;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+  color: #151717;
+}
+
+.btn:hover {
+  border: 1px solid #2d79f3;
+}
+
+/* Divider Line */
+.line {
+    position: relative;
+    margin: 15px 0;
+}
+.line::before, .line::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #ecedec;
+}
+.line::before { left: 0; }
+.line::after { right: 0; }

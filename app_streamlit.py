@@ -1,126 +1,157 @@
-
-import os
 import streamlit as st
-from openai import OpenAI
-from dotenv import load_dotenv
+import sqlite3
+import os
+import re
+import streamlit.components.v1 as components
+from database import get_user, create_user, verify_user, save_chat_message, get_chat_history, clear_chat_history
+from inference_engine import get_bot_response
+from emotion_detector import detect_emotion
 
 # ─────────────────────────────────────────
-# 1. CONFIGURATION
+# 1. CONFIGURATION & STYLES
 # ─────────────────────────────────────────
-load_dotenv()
+st.set_page_config(page_title="TravelBot AI", layout="wide")
 
-# Page settings (must be the first Streamlit command)
-st.set_page_config(
-    page_title="AI Chatbot",
-    page_icon="🤖",
-    layout="centered"
-)
-
-SYSTEM_PROMPT = """You are a helpful, friendly, and knowledgeable AI assistant.
-You give clear and concise answers. If you are unsure, you say so honestly."""
-
-MODEL = "gpt-4o-mini"
+# Load CSS
+with open("static/style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
-# 2. INITIALIZE THE OPENAI CLIENT
+# 2. SESSION STATE & AUTH LOGIC
 # ─────────────────────────────────────────
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    st.error(" API key not found! Please create a .env file with OPENAI_API_KEY.")
-    st.stop()  # Stop rendering the rest of the app
-
-client = OpenAI(api_key=api_key)
-
-# ─────────────────────────────────────────
-# 3. INITIALIZE SESSION STATE
-# ─────────────────────────────────────────
-# This runs only ONCE when the app first loads
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": SYSTEM_PROMPT}
-    ]
+    st.session_state.messages = []
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_email" not in st.session_state:
+    st.session_state.user_email = None
+if "show_auth" not in st.session_state:
+    st.session_state.show_auth = False
+
+def render_auth_page():
+    st.html("""
+        <div style="text-align: center; padding: 2rem;">
+            <h1 style="color: #151717; font-size: 3rem; margin-bottom: 0.5rem;">TravelBot AI</h1>
+            <p style="color: #64748b; font-size: 1.2rem;">Your intelligent AI travel companion</p>
+        </div>
+    """)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        tab1, tab2 = st.tabs(["Login", "Sign Up"])
+        
+        with tab1:
+            st.markdown("### Welcome Back")
+            email = st.text_input("Email", key="login_email", placeholder="Enter your email")
+            password = st.text_input("Password", type="password", key="login_pass", placeholder="Enter your password")
+            
+            if st.button("Sign In", key="login_btn", use_container_width=True):
+                if email and password:
+                    user = get_user(email)
+                    if user and user[2] == password:
+                        st.session_state.authenticated = True
+                        st.session_state.user_email = email
+                        st.session_state.messages = get_chat_history(email)
+                        st.session_state.show_auth = False
+                        st.rerun()
+                    else:
+                        st.error("Invalid email or password.")
+                else:
+                    st.warning("Please fill in all fields.")
+
+        with tab2:
+            st.markdown("### Create Account")
+            new_email = st.text_input("Email", key="signup_email", placeholder="Choose an email")
+            new_password = st.text_input("Password", type="password", key="signup_pass", placeholder="Create a password")
+            
+            if st.button("Sign Up", key="signup_btn", use_container_width=True):
+                if new_email and new_password:
+                    if get_user(new_email):
+                        st.error("Email already exists.")
+                    elif create_user(new_email, new_password):
+                        verify_user(new_email)
+                        st.session_state.authenticated = True
+                        st.session_state.user_email = new_email
+                        st.session_state.messages = [] # New user, empty history
+                        st.session_state.show_auth = False
+                        st.success("Account created successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Registration failed. Please try again.")
+                else:
+                    st.warning("Please fill in all fields.")
 
 # ─────────────────────────────────────────
-# 4. HEADER AND SIDEBAR
+# 4. NAVIGATION & HEADER
 # ─────────────────────────────────────────
-st.title(" AI Chatbot")
-st.markdown("*Powered by OpenAI GPT · Built with Python & Streamlit*")
+def render_header():
+    st.markdown(f"### 🌍 Welcome back, {st.session_state.user_email.split('@')[0]}!" if st.session_state.authenticated else "### 🌍 TravelBot Guest Session")
 
+# --- Main Application Flow ---
+if st.session_state.authenticated:
+    st.session_state.show_auth = False
+
+if st.session_state.show_auth and not st.session_state.authenticated:
+    if st.button("← Back to Chat"):
+        st.session_state.show_auth = False
+        st.rerun()
+    render_auth_page()
+    st.stop()
+
+render_header()
+
+# ─────────────────────────────────────────
+# 5. SIDEBAR
+# ─────────────────────────────────────────
 with st.sidebar:
-    st.header(" Settings")
-    
-    temperature = st.slider(
-        "Creativity (Temperature)",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.7,
-        step=0.1,
-        help="Higher = more creative. Lower = more factual."
-    )
-    
-    max_tokens = st.slider(
-        "Max Response Length",
-        min_value=50,
-        max_value=1000,
-        value=500,
-        step=50,
-        help="Maximum number of words in AI response."
-    )
-    
+    st.title("TravelBot")
     st.divider()
     
-    # Show message count
-    msg_count = len([m for m in st.session_state.messages if m["role"] != "system"])
-    st.metric("Messages in history", msg_count)
+    if st.session_state.authenticated:
+        st.markdown(f"👤 **{st.session_state.user_email}**")
+        if st.button("Logout"):
+            st.session_state.authenticated = False
+            st.session_state.user_email = None
+            st.session_state.messages = []
+            st.rerun()
+    else:
+        st.markdown("👤 **Guest User**")
+        if st.button("Login to Sync History"):
+            st.session_state.show_auth = True
+            st.rerun()
     
-    # Reset button
-    if st.button("Clear Conversation", use_container_width=True):
-        st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    st.divider()
+    st.markdown("### 🛠 Tools")
+    if st.button("Clear Chat"):
+        st.session_state.messages = []
+        if st.session_state.authenticated:
+            clear_chat_history(st.session_state.user_email)
         st.rerun()
 
 # ─────────────────────────────────────────
-# 5. DISPLAY CHAT HISTORY
+# 6. CHAT INTERFACE
 # ─────────────────────────────────────────
-# Loop through all messages (skip the system message)
-for message in st.session_state.messages[1:]:
+for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ─────────────────────────────────────────
-# 6. HANDLE NEW USER INPUT
-# ─────────────────────────────────────────
-# st.chat_input shows a text box at the bottom of the page
-if prompt := st.chat_input("Type your message here..."):
+if prompt := st.chat_input("Ask about your next adventure..."):
+    # Detect Emotion
+    emoji, emotion, color = detect_emotion(prompt)
     
-    # Display user message immediately
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    
-    # Add user message to history
     st.session_state.messages.append({"role": "user", "content": prompt})
+    if st.session_state.authenticated:
+        save_chat_message(st.session_state.user_email, "user", prompt)
+
+    with st.chat_message("user"):
+        st.markdown(f"{prompt} *({emotion} {emoji})*")
     
-    # Call the AI API and display response
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                response = client.chat.completions.create(
-                    model=MODEL,
-                    messages=st.session_state.messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens
-                )
-                ai_reply = response.choices.message.content
-                st.markdown(ai_reply)
-                
-                # Add AI reply to history
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": ai_reply
-                })
-                
-            except Exception as e:
-                error_msg = f" Error: {str(e)}"
-                st.error(error_msg)
-                # Remove the failed user message
-                st.session_state.messages.pop()
+        # Get actual bot response
+        response, source = get_bot_response(prompt)
+        
+        st.markdown(response)
+        st.caption(f"Source: {source}")
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        if st.session_state.authenticated:
+            save_chat_message(st.session_state.user_email, "assistant", response)
