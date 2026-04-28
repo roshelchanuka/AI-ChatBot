@@ -1,207 +1,253 @@
-/* Premium TravelBot Styling */
+/* 
+  Premium TravelBot Design System
+  Theme: Deep Sea Glassmorphism
+*/
 
-.stApp {
-    background-color: #0e1117;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary: #3b82f6;
+    --primary-glow: rgba(59, 130, 246, 0.5);
+    --secondary: #8b5cf6;
+    --background: #0f172a;
+    --surface: rgba(30, 41, 59, 0.7);
+    --border: rgba(255, 255, 255, 0.1);
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
 }
 
-/* Glassmorphism sidebar */
+/* Global Reset & Typography */
+.stApp {
+    background: radial-gradient(circle at top right, #1e293b, #0f172a);
+    font-family: 'Outfit', sans-serif !important;
+}
+
+/* Glassmorphism Sidebar */
 [data-testid="stSidebar"] {
-    background-image: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid var(--border);
+}
+
+[data-testid="stSidebar"] .stMarkdown h1 {
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: -1px;
 }
 
 /* Custom Chat Bubbles */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
 .user-bubble {
-    background-color: #2563eb;
-    color: white;
-    padding: 12px 18px;
-    border-radius: 20px 20px 0px 20px;
-    margin: 10px 0;
+    align-self: flex-end;
+    background: transparent;
+    color: var(--text-main);
+    padding: 0.8rem 0;
     max-width: 80%;
-    float: right;
-    clear: both;
-    word-wrap: break-word;
-    height: auto;
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    border: none;
+    box-shadow: none;
+    text-align: right;
+    font-weight: 400;
 }
 
 .bot-bubble {
-    background-color: #334155;
-    color: #f1f5f9;
-    padding: 12px 18px;
-    border-radius: 20px 20px 20px 0px;
-    margin: 10px 0;
+    align-self: flex-start;
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    color: var(--text-main);
+    padding: 1rem 1.5rem;
+    border-radius: 1.5rem 1.5rem 1.5rem 0.2rem;
+    border: 1px solid var(--border);
     max-width: 85%;
-    float: left;
-    clear: both;
-    border-left: 4px solid #3b82f6;
-    word-wrap: break-word;
-    height: auto;
-    white-space: pre-wrap;
+    animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
 }
 
-/* Emotion Avatar Container */
-.emotion-container {
+.bot-bubble::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary);
+    border-radius: 2px 0 0 2px;
+}
+
+/* Animations */
+@keyframes slideInRight {
+    from { transform: translateX(30px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-30px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Emotion Avatar */
+.emotion-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
     text-align: center;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.emotion-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 .emotion-emoji {
-    font-size: 60px;
-    margin-bottom: 10px;
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
 }
 
 .emotion-label {
-    font-size: 14px;
-    font-weight: bold;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+}
+
+/* Inputs & Buttons */
+.stTextInput input {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 0.8rem !important;
+    color: white !important;
+    padding: 1rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.stTextInput input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px var(--primary-glow) !important;
+}
+
+.stButton button {
+    background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 0.8rem !important;
+    padding: 0.6rem 1.5rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-/* Cards for packages */
-.travel-card {
-    background: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 15px;
-    margin: 10px 0;
+.stButton button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px var(--primary-glow) !important;
 }
 
-/* --- EXACT CUSTOM FORM CSS --- */
-.auth-form-container, .form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: #ffffff;
-  padding: 30px;
-  width: 450px;
-  border-radius: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  margin: auto;
-  color: #151717;
+/* Auth Forms */
+.auth-container {
+    max-width: 450px;
+    margin: 4rem auto;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    padding: 3rem;
+    border-radius: 2rem;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.8s ease;
 }
 
-::placeholder {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
-.auth-form-container button, .form button {
-  align-self: flex-end;
+.auth-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
 }
 
-.flex-column > label {
-  color: #151717;
-  font-weight: 600;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
 }
 
-.inputForm {
-  border: 1.5px solid #ecedec;
-  border-radius: 10px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  padding-left: 10px;
-  transition: 0.2s ease-in-out;
-  background: white;
+::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
 }
 
-.input {
-  margin-left: 10px;
-  border: none;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  color: black;
-  border-radius: 10px;
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
 }
 
-.input:focus {
-  outline: none;
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
 }
 
-.inputForm:focus-within {
-  border: 1.5px solid #2d79f3;
-}
-
-.flex-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  justify-content: space-between;
-}
-
-.flex-row > div > label {
-  font-size: 14px;
-  color: black;
-  font-weight: 400;
-}
-
-.span {
-  font-size: 14px;
-  margin-left: 5px;
-  color: #2d79f3;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.button-submit {
-  margin: 20px 0 10px 0;
-  background-color: #151717;
-  border: none;
-  color: white;
-  font-size: 15px;
-  font-weight: 500;
-  border-radius: 10px;
-  height: 50px;
-  width: 100%;
-  cursor: pointer;
-  align-self: center !important; /* Overriding align-self: flex-end for the main submit button */
-}
-
-.p {
-  text-align: center;
-  color: black;
-  font-size: 14px;
-  margin: 5px 0;
-}
-
-.btn {
-  margin-top: 10px;
-  width: 100%;
-  height: 50px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: 500;
-  gap: 10px;
-  border: 1px solid #ededef;
-  background-color: white;
-  cursor: pointer;
-  transition: 0.2s ease-in-out;
-  color: #151717;
-}
-
-.btn:hover {
-  border: 1px solid #2d79f3;
-}
-
-/* Divider Line */
-.line {
-    position: relative;
-    margin: 15px 0;
-}
-.line::before, .line::after {
-    content: "";
+/* Microphone Button Styling */
+#mic-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     position: absolute;
-    top: 50%;
-    width: 40%;
-    height: 1px;
-    background: #ecedec;
+    right: 55px; /* Adjust based on your send button position */
+    bottom: 15px;
+    z-index: 999999;
 }
-.line::before { left: 0; }
-.line::after { right: 0; }
+
+#mic-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: scale(1.1);
+}
+
+#mic-btn.recording {
+    background: #ef4444; /* Red for recording */
+    border-color: #ef4444;
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Ensure the chat input textarea has enough padding for the mic */
+[data-testid="stChatInput"] textarea {
+    padding-right: 95px !important;
+}
+

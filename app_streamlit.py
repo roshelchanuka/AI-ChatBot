@@ -12,9 +12,7 @@ from emotion_detector import detect_emotion
 # ─────────────────────────────────────────
 st.set_page_config(page_title="TravelBot AI", layout="wide")
 
-# Load CSS
-with open("static/style.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
 
 # ─────────────────────────────────────────
 # 2. SESSION STATE & AUTH LOGIC
@@ -29,12 +27,14 @@ if "show_auth" not in st.session_state:
     st.session_state.show_auth = False
 
 def render_auth_page():
-    st.html("""
-        <div style="text-align: center; padding: 2rem;">
-            <h1 style="color: #151717; font-size: 3rem; margin-bottom: 0.5rem;">TravelBot AI</h1>
-            <p style="color: #64748b; font-size: 1.2rem;">Your intelligent AI travel companion</p>
+    st.markdown("""
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1 class="auth-title">TravelBot AI</h1>
+                <p style="color: #94a3b8;">Your intelligent AI travel companion</p>
+            </div>
         </div>
-    """)
+    """, unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -132,8 +132,8 @@ with st.sidebar:
 # 6. CHAT INTERFACE
 # ─────────────────────────────────────────
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    bubble_class = "user-bubble" if message["role"] == "user" else "bot-bubble"
+    st.markdown(f'<div class="{bubble_class}">{message["content"]}</div>', unsafe_allow_html=True)
 
 if prompt := st.chat_input("Ask about your next adventure..."):
     # Detect Emotion
@@ -143,15 +143,36 @@ if prompt := st.chat_input("Ask about your next adventure..."):
     if st.session_state.authenticated:
         save_chat_message(st.session_state.user_email, "user", prompt)
 
-    with st.chat_message("user"):
-        st.markdown(f"{prompt} *({emotion} {emoji})*")
+    # Re-render to show new message immediately with animation
+    st.rerun()
+
+# ─────────────────────────────────────────
+# 7. BOT RESPONSE HANDLING
+# ─────────────────────────────────────────
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+    last_prompt = st.session_state.messages[-1]["content"]
     
-    with st.chat_message("assistant"):
+    with st.spinner("TravelBot is thinking..."):
         # Get actual bot response
-        response, source = get_bot_response(prompt)
+        response, source = get_bot_response(last_prompt)
         
-        st.markdown(response)
-        st.caption(f"Source: {source}")
         st.session_state.messages.append({"role": "assistant", "content": response})
         if st.session_state.authenticated:
             save_chat_message(st.session_state.user_email, "assistant", response)
+            # Automatic Learning: Save useful AI/Search responses to the learned_responses table
+            from database import save_learned_response
+            # Save if the response came from AI or Web Search (not from the local DB/Static KB)
+            if len(last_prompt) > 5 and source in ["AI GPT", "Web Search", "Live Web Search"]:
+                save_learned_response(last_prompt, response)
+        st.rerun()
+
+# ─────────────────────────────────────────
+# 8. ASSET INJECTION (BOTTOM)
+# ─────────────────────────────────────────
+with open("static/style.css") as f:
+    st.markdown('<style>' + f.read() + '</style>', unsafe_allow_html=True)
+    st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">', unsafe_allow_html=True)
+
+with open("static/main.js") as f:
+    # Use components.html for robust JS execution that can escape to parent
+    components.html(f'<script>{f.read()}</script>', height=0)

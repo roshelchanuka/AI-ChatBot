@@ -56,3 +56,5 @@ SpeechRecognition
 PyAudio
 wikipedia-api
 requests
+duckduckgo-search
+beautifulsoup4

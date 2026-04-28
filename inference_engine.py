@@ -7,17 +7,28 @@ from ml_learner import get_learned_match
 import re
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    print("WARNING: OPENAI_API_KEY is missing!")
+    client = None
+else:
+    client = OpenAI(api_key=api_key)
 
 import wikipediaapi
 import requests
+from duckduckgo_search import DDGS
 
 class InferenceEngine:
     def __init__(self):
-        self.system_prompt = """You are TravelBot, a professional and friendly travel consultant for Sri Lanka.
-        You provide detailed, helpful advice about tours, hotels, and destinations in Sri Lanka.
-        If a user asks for packages or hotels, remind them you can search the database.
-        Keep responses concise and inviting."""
+        self.system_prompt = """You are TravelBot, a professional and friendly travel consultant. 
+        While you specialize in Sri Lanka, you have full access to the internet to answer ANY question about travel, history, weather, or news worldwide.
+        
+        CRITICAL INSTRUCTIONS:
+        1. If a user asks for information NOT in your local database (like hotels in foreign countries, global history, or current events), 
+           ALWAYS use the 'web_search' tool immediately.
+        2. Never say "I don't have that in my database" or "I only store data". Instead, just search Google/Internet and provide the answer.
+        3. Make your responses inviting, thorough, and professional."""
         # Initialize Wikipedia
         self.wiki = wikipediaapi.Wikipedia(
             user_agent="TravelBot/1.0 (contact@example.com)",
@@ -45,6 +56,23 @@ class InferenceEngine:
                 return page.summary[:1200] + "..."
         except:
             pass
+        return None
+
+    def search_web(self, query):
+        """Performs a robust web search using DuckDuckGo."""
+        try:
+            with DDGS() as ddgs:
+                # Try search
+                results = list(ddgs.text(query, max_results=8))
+                if not results:
+                    # Retry with a slightly modified query if first one fails
+                    results = list(ddgs.text(f"travel information {query}", max_results=5))
+                
+                if results:
+                    search_results = "\n\n".join([f"Title: {r.get('title')}\nSnippet: {r.get('body')}\nSource: {r.get('href')}" for r in results])
+                    return search_results
+        except Exception as e:
+            print(f"Search error: {e}")
         return None
 
     def get_intent(self, text):
@@ -93,7 +121,7 @@ class InferenceEngine:
                 for p in packages:
                     resp += f"🏝️ **{p[1]}** ({p[3]})\n💰 Price: ${p[4]}\n📝 {p[5]}\n\n"
                 return resp, "Dynamic DB"
-            return f"I couldn't find any packages in '{dest_name}'. Try another location!", "Dynamic DB"
+            # No return here -> fall through to AI if DB is empty
 
         if intent == "query_hotels":
             # Extract location (e.g., 'hotels in Colombo')
@@ -106,7 +134,7 @@ class InferenceEngine:
                 for h in hotels:
                     resp += f"🏨 **{h[1]}** ({h[3]} Stars)\n📍 Location: {h[2]}\n💵 Rate: ${h[4]}/night\n✨ {h[5]}\n\n"
                 return resp, "Dynamic DB"
-            return f"Sorry, I don't have any hotels listed in '{loc_name}' yet.", "Dynamic DB"
+            # No return here -> fall through to AI if DB is empty
 
         if intent == "query_destinations":
             # Extract destination name (e.g., 'tell me about Ella')
@@ -124,21 +152,74 @@ class InferenceEngine:
             if wiki_summary:
                 return f"🌐 **{dest_name} (from Wikipedia)**\n\n{wiki_summary}", "Live Web Search"
                 
-            return f"I don't have details on '{dest_name}' in my records or online.", "Dynamic DB"
+            # fall through to Tier 4
 
-        # Tier 3: OpenAI GPT Fallback
+        # Tier 4: OpenAI GPT with Web Search Tool
         try:
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "web_search",
+                        "description": "Search the internet for up-to-date information, news, travel details, historical facts, or anything else NOT in the local database. Use this for Google-style searches.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "query": {"type": "string", "description": "The specific search query for the internet"}
+                            },
+                            "required": ["query"]
+                        }
+                    }
+                }
+            ]
+
+            messages = [
+                {"role": "system", "content": self.system_prompt + "\nYou can use the web_search tool if you need information you don't have."},
+                {"role": "user", "content": user_input}
+            ]
+
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": user_input}
-                ],
+                messages=messages,
+                tools=tools,
                 temperature=0.7
             )
-            return response.choices.message.content, "AI GPT"
+
+            assistant_message = response.choices[0].message
+            
+            # Check if tool call is needed
+            if assistant_message.tool_calls:
+                tool_call = assistant_message.tool_calls[0]
+                if tool_call.function.name == "web_search":
+                    import json
+                    args = json.loads(tool_call.function.arguments)
+                    search_query = args.get("query")
+                    
+                    search_content = self.search_web(search_query)
+                    
+                    if search_content:
+                        # Add tool response to history
+                        messages.append(assistant_message)
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "name": "web_search",
+                            "content": search_content
+                        })
+                        
+                        # Get final response
+                        final_response = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=messages,
+                            temperature=0.7
+                        )
+                        return final_response.choices[0].message.content, "Web Search"
+                    else:
+                        return "I tried to search the web but couldn't find anything relevant.", "Web Search"
+
+            return assistant_message.content, "AI GPT"
         except Exception as e:
-            return f"I'm having trouble connecting to my AI brain right now. Error: {str(e)}", "Error"
+            return f"I'm having trouble connecting to my AI brain or search tool. Error: {str(e)}", "Error"
 
 # Singleton
 engine = InferenceEngine()

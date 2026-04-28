@@ -110,7 +110,12 @@ def initialize_db():
             ('Galle', 'Galle Fort, Unawatuna Beach', 'Tropical', 'December to April'),
             ('Nuwara Eliya', 'Gregory Lake, Tea Factories', 'Cold', 'April to June'),
             ('Arugam Bay', 'Surfing Points', 'Dry & Sunny', 'May to September'),
-            ('Anuradhapura', 'Ancient Ruins, Stupas', 'Dry', 'July to September')
+            ('Anuradhapura', 'Ancient Ruins, Stupas', 'Dry', 'July to September'),
+            ('Kandy', 'Temple of the Tooth, Peradeniya Gardens', 'Mild', 'December to April'),
+            ('Jaffna', 'Nallur Kandaswamy Kovil, Jaffna Fort', 'Dry & Hot', 'January to March'),
+            ('Colombo', 'Galle Face Green, Gangaramaya Temple', 'Humid', 'January to March'),
+            ('Matale', 'Aluvihare Rock Temple, Spice Gardens', 'Tropical', 'Throughout the year'),
+            ('Ratnapura', 'Gem Museums, Adam\'s Peak access', 'Wet', 'January to March')
         ]
         cursor.executemany('INSERT INTO destinations (name, attractions, climate, best_time) VALUES (?,?,?,?)', destinations)
 
