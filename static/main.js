@@ -53,23 +53,34 @@ function initVoiceFeatures() {
 
         recognition.onstart = () => {
             isRecording = true;
-            document.getElementById('mic-btn')?.classList.add('recording');
+            doc.getElementById('mic-btn')?.classList.add('recording');
         };
 
         recognition.onend = () => {
             isRecording = false;
-            document.getElementById('mic-btn')?.classList.remove('recording');
+            doc.getElementById('mic-btn')?.classList.remove('recording');
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            isRecording = false;
+            doc.getElementById('mic-btn')?.classList.remove('recording');
         };
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             const textarea = doc.querySelector('[data-testid="stChatInput"] textarea');
             if (textarea) {
-                textarea.value = transcript;
+                // More reliable way to set value in React-based inputs
+                const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+                nativeTextAreaValueSetter.call(textarea, transcript);
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                
                 setTimeout(() => {
-                    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-                }, 300);
+                    textarea.dispatchEvent(new KeyboardEvent('keydown', { 
+                        key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true 
+                    }));
+                }, 500);
             }
         };
     }
@@ -104,4 +115,19 @@ function speakText(text) {
     utterance.lang = 'en-US';
     window.speechSynthesis.speak(utterance);
 }
+
+window.parent.showSuccessPopup = function(message) {
+    const popup = doc.createElement('div');
+    popup.className = 'success-popup';
+    popup.innerHTML = `
+        <i class="fa-solid fa-circle-check"></i>
+        <span>${message}</span>
+    `;
+    doc.body.appendChild(popup);
+    
+    setTimeout(() => {
+        popup.classList.add('fade-out');
+        setTimeout(() => popup.remove(), 500);
+    }, 4000);
+};
 

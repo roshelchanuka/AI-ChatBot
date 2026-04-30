@@ -25,6 +25,17 @@ if "user_email" not in st.session_state:
     st.session_state.user_email = None
 if "show_auth" not in st.session_state:
     st.session_state.show_auth = False
+if "signup_success" not in st.session_state:
+    st.session_state.signup_success = False
+
+# Trigger Signup Success Popup
+if st.session_state.signup_success:
+    components.html(f"""
+        <script>
+            window.parent.showSuccessPopup("your Account created successfully");
+        </script>
+    """, height=0)
+    st.session_state.signup_success = False
 
 def render_auth_page():
     st.markdown("""
@@ -74,7 +85,7 @@ def render_auth_page():
                         st.session_state.user_email = new_email
                         st.session_state.messages = [] # New user, empty history
                         st.session_state.show_auth = False
-                        st.success("Account created successfully!")
+                        st.session_state.signup_success = True
                         st.rerun()
                     else:
                         st.error("Registration failed. Please try again.")
