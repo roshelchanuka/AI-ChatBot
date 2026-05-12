@@ -3,20 +3,26 @@ import sqlite3
 import os
 import re
 import streamlit.components.v1 as components
+from voice_engine import voice
 from database import get_user, create_user, verify_user, save_chat_message, get_chat_history, clear_chat_history
 from inference_engine import get_bot_response
 from emotion_detector import detect_emotion
 
-# ─────────────────────────────────────────
 # 1. CONFIGURATION & STYLES
-# ─────────────────────────────────────────
+
 st.set_page_config(page_title="TravelBot AI", layout="wide")
 
+# Inject Assets Early (CSS & JS)
+with open("static/style.css") as f:
+    st.markdown('<style>' + f.read() + '</style>', unsafe_allow_html=True)
+    st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">', unsafe_allow_html=True)
+
+with open("static/main.js") as f:
+    components.html(f'<script>{f.read()}</script>', height=0)
 
 
-# ─────────────────────────────────────────
 # 2. SESSION STATE & AUTH LOGIC
-# ─────────────────────────────────────────
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "authenticated" not in st.session_state:
@@ -92,9 +98,9 @@ def render_auth_page():
                 else:
                     st.warning("Please fill in all fields.")
 
-# ─────────────────────────────────────────
-# 4. NAVIGATION & HEADER
-# ─────────────────────────────────────────
+
+# NAVIGATION & HEADER
+
 def render_header():
     st.markdown(f"### 🌍 Welcome back, {st.session_state.user_email.split('@')[0]}!" if st.session_state.authenticated else "### 🌍 TravelBot Guest Session")
 
@@ -111,9 +117,9 @@ if st.session_state.show_auth and not st.session_state.authenticated:
 
 render_header()
 
-# ─────────────────────────────────────────
-# 5. SIDEBAR
-# ─────────────────────────────────────────
+
+# SIDEBAR
+
 with st.sidebar:
     st.title("TravelBot")
     st.divider()
@@ -139,27 +145,36 @@ with st.sidebar:
             clear_chat_history(st.session_state.user_email)
         st.rerun()
 
-# ─────────────────────────────────────────
-# 6. CHAT INTERFACE
-# ─────────────────────────────────────────
+
+#CHAT INTERFACE
+
 for message in st.session_state.messages:
     bubble_class = "user-bubble" if message["role"] == "user" else "bot-bubble"
     st.markdown(f'<div class="{bubble_class}">{message["content"]}</div>', unsafe_allow_html=True)
 
 if prompt := st.chat_input("Ask about your next adventure..."):
-    # Detect Emotion
-    emoji, emotion, color = detect_emotion(prompt)
-    
+
+    # Check for Voice Commands
+    cmd = voice.handle_voice_commands(prompt)
+    if cmd:
+        if cmd == "CMD_CLEAR":
+            st.session_state.messages = []
+            if st.session_state.authenticated:
+                clear_chat_history(st.session_state.user_email)
+            st.toast("🧹 Chat cleared by voice command!")
+            st.rerun()
+       
+
     st.session_state.messages.append({"role": "user", "content": prompt})
     if st.session_state.authenticated:
         save_chat_message(st.session_state.user_email, "user", prompt)
 
-    # Re-render to show new message immediately with animation
+
     st.rerun()
 
-# ─────────────────────────────────────────
+
 # 7. BOT RESPONSE HANDLING
-# ─────────────────────────────────────────
+
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     last_prompt = st.session_state.messages[-1]["content"]
     
@@ -171,19 +186,12 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         if st.session_state.authenticated:
             save_chat_message(st.session_state.user_email, "assistant", response)
             # Automatic Learning: Save useful AI/Search responses to the learned_responses table
+
             from database import save_learned_response
+            
             # Save if the response came from AI or Web Search (not from the local DB/Static KB)
             if len(last_prompt) > 5 and source in ["AI GPT", "Web Search", "Live Web Search"]:
                 save_learned_response(last_prompt, response)
         st.rerun()
 
-# ─────────────────────────────────────────
-# 8. ASSET INJECTION (BOTTOM)
-# ─────────────────────────────────────────
-with open("static/style.css") as f:
-    st.markdown('<style>' + f.read() + '</style>', unsafe_allow_html=True)
-    st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">', unsafe_allow_html=True)
-
-with open("static/main.js") as f:
-    # Use components.html for robust JS execution that can escape to parent
-    components.html(f'<script>{f.read()}</script>', height=0)
+# Application End
