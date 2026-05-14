@@ -21,14 +21,14 @@ from duckduckgo_search import DDGS
 
 class InferenceEngine:
     def __init__(self):
-        self.system_prompt = """You are TravelBot, a professional and friendly travel consultant. 
-        While you specialize in Sri Lanka, you have full access to the internet to answer ANY question about travel, history, weather, or news worldwide.
+        self.system_prompt = """You are TravelBot, an expert travel consultant specializing in Sri Lanka. 
+        You have deep knowledge of Sri Lankan cities, culture, heritage, and hidden gems.
         
         CRITICAL INSTRUCTIONS:
-        1. If a user asks for information NOT in your local database (like hotels in foreign countries, global history, or current events), 
-           ALWAYS use the 'web_search' tool immediately.
-        2. Never say "I don't have that in my database" or "I only store data". Instead, just search Google/Internet and provide the answer.
-        3. Make your responses inviting, thorough, and professional."""
+        1. When users ask about Sri Lankan cities (like Nuwara Eliya, Galle, Jaffna, or Kandy), provide rich, detailed answers that highlight unique local experiences (e.g., 'stilt fishing in Mirissa', 'tea factory tours in Nuwara Eliya').
+        2. If a user asks for information NOT in your local database (like hotels in foreign countries, global history, or current events), ALWAYS use the 'web_search' tool immediately.
+        3. Never say "I don't have that in my database" or "I only store data". Instead, use your AI brain or search tools to provide the best possible answer.
+        4. Make your responses inviting, thorough, and professional. Use emojis related to travel (🏝️, 🏨, ⛰️) where appropriate."""
         # Initialize Wikipedia
         self.wiki = wikipediaapi.Wikipedia(
             user_agent="TravelBot/1.0 (contact@example.com)",
@@ -88,8 +88,8 @@ class InferenceEngine:
             return "query_destinations"
         return "general"
 
-    def process_query(self, user_input):
-        """Main 4-tier inference logic (now with Web Search)."""
+    def process_query(self, user_input, history=None):
+        """Main 4-tier inference logic (now with Web Search and History)."""
         
         # Tier 1: Static Knowledge Base
         static_resp = get_static_response(user_input)
@@ -105,7 +105,9 @@ class InferenceEngine:
         intent = self.get_intent(user_input)
         
         if intent == "query_weather":
-            city = user_input.split()[-1] # Usually the last word
+            # Extract city (e.g., 'weather in Nuwara Eliya')
+            city_match = re.search(r'(in|at|for) ([\w\s]+)', user_input, re.IGNORECASE)
+            city = city_match.group(2).strip().strip('?!.') if city_match else user_input.split()[-1].strip('?!.')
             weather_info = self.get_weather(city)
             if weather_info:
                 return weather_info, "Live Web Search"
@@ -137,9 +139,9 @@ class InferenceEngine:
             # No return here -> fall through to AI if DB is empty
 
         if intent == "query_destinations":
-            # Extract destination name (e.g., 'tell me about Ella')
-            dest_match = re.search(r'(about|on|history of) ([\w\s]+)', user_input, re.IGNORECASE)
-            dest_name = dest_match.group(2).strip().capitalize() if dest_match else user_input.split()[-1].capitalize()
+            # Extract destination name (e.g., 'tell me about Ella' or 'info on Nuwara Eliya')
+            dest_match = re.search(r'(about|on|history of|info for) ([\w\s]+)', user_input, re.IGNORECASE)
+            dest_name = dest_match.group(2).strip().strip('?!.').capitalize() if dest_match else user_input.split()[-1].strip('?!.').capitalize()
             
             # Try DB first
             dest = query_destinations(dest_name)
@@ -174,9 +176,16 @@ class InferenceEngine:
             ]
 
             messages = [
-                {"role": "system", "content": self.system_prompt + "\nYou can use the web_search tool if you need information you don't have."},
-                {"role": "user", "content": user_input}
+                {"role": "system", "content": self.system_prompt + "\nYou can use the web_search tool if you need information you don't have."}
             ]
+            
+            # Include History if available
+            if history:
+                # Limit history to last 5-10 messages to avoid token bloat
+                for msg in history[-10:]:
+                    messages.append({"role": msg["role"], "content": msg["content"]})
+            else:
+                messages.append({"role": "user", "content": user_input})
 
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -224,5 +233,5 @@ class InferenceEngine:
 # Singleton
 engine = InferenceEngine()
 
-def get_bot_response(user_input):
-    return engine.process_query(user_input)
+def get_bot_response(user_input, history=None):
+    return engine.process_query(user_input, history)

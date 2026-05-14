@@ -179,8 +179,8 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     last_prompt = st.session_state.messages[-1]["content"]
     
     with st.spinner("TravelBot is thinking..."):
-        # Get actual bot response
-        response, source = get_bot_response(last_prompt)
+        # Get actual bot response with history context
+        response, source = get_bot_response(last_prompt, st.session_state.messages[:-1])
         
         st.session_state.messages.append({"role": "assistant", "content": response})
         if st.session_state.authenticated:

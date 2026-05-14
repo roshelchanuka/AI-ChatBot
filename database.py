@@ -99,7 +99,10 @@ def initialize_db():
             ('98 Acres Resort', 'Ella', 5, 200.0, 'Mountain View, Eco-friendly, Spa'),
             ('Jetwing Lighthouse', 'Galle', 5, 180.0, 'Beachfront, Architecture, Fine Dining'),
             ('Heritance Kandalama', 'Dambulla', 5, 190.0, 'Eco-design, Lake View, Wildlife'),
-            ('Earls Regency', 'Kandy', 5, 130.0, 'Luxury, River View, Gym')
+            ('Earls Regency', 'Kandy', 5, 130.0, 'Luxury, River View, Gym'),
+            ('Aliya Resort', 'Sigiriya', 4, 140.0, 'Infinity Pool, Spa, Cultural Tours'),
+            ('Trinco Blu', 'Trincomalee', 4, 110.0, 'Whale Watching, Beachfront, Seafood'),
+            ('Mandina Resort', 'Mirissa', 4, 95.0, 'Ocean View, Yoga, Whale Watching')
         ]
         cursor.executemany('INSERT INTO hotels (name, location, star_rating, price_per_night, amenities) VALUES (?,?,?,?,?)', hotels)
 
@@ -115,7 +118,12 @@ def initialize_db():
             ('Jaffna', 'Nallur Kandaswamy Kovil, Jaffna Fort', 'Dry & Hot', 'January to March'),
             ('Colombo', 'Galle Face Green, Gangaramaya Temple', 'Humid', 'January to March'),
             ('Matale', 'Aluvihare Rock Temple, Spice Gardens', 'Tropical', 'Throughout the year'),
-            ('Ratnapura', 'Gem Museums, Adam\'s Peak access', 'Wet', 'January to March')
+            ('Ratnapura', 'Gem Museums, Adam\'s Peak access', 'Wet', 'January to March'),
+            ('Sigiriya', 'Ancient Rock Fortress, Lion Rock', 'Dry & Sunny', 'January to April'),
+            ('Polonnaruwa', 'Ancient City Ruins, Parakrama Samudra', 'Dry', 'July to August'),
+            ('Trincomalee', 'Nilaveli Beach, Koneswaram Temple', 'Tropical', 'May to October'),
+            ('Mirissa', 'Whale Watching, Beach Vibes', 'Tropical', 'November to April'),
+            ('Hikkaduwa', 'Coral Reefs, Surfing', 'Tropical', 'November to April')
         ]
         cursor.executemany('INSERT INTO destinations (name, attractions, climate, best_time) VALUES (?,?,?,?)', destinations)
 
